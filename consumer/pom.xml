@@ -1,7 +1,7 @@
 <project>
   <modelVersion>4.0.0</modelVersion>
  
-  <groupId>com.guthub.hyp0th3rmi4.protobuf</groupId>
+  <groupId>com.github.hyp0th3rmi4.protobuf</groupId>
   <artifactId>dynamic-serde</artifactId>
   <version>0.0.1</version>
 

@@ -26,7 +26,7 @@ publish-event: build/publisher
 consumer: build/consumer.jar
 
 build/consumer.jar: build/root.pb
-	cd consumer && mvn package  && mv consumer-jar-with-dependencies.jar ../build/consumer.jar
+	cd consumer && mvn package  && mv dynamic-serde-jar-with-dependencies.jar ../build/consumer.jar
 	
 .PHONY: consume-event
 consume-event: build/consumer.jar

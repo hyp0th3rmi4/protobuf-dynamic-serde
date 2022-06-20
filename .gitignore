@@ -1,3 +1,5 @@
+**/.vscode
+
 # build artefacts (binary and descriptors)
 build/*
 consumer/target

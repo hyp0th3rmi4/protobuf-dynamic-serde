@@ -17,31 +17,57 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func SerializeSimpleMessage(path string) error {
+// SerializeSimpleMessage persists to the specified path a cloud event
+// that contains as payload a random SimpleMessage encoded as a protobuf
+// binary in base64. The cloud event generated contains attributes to
+// enable consumers to retrieve the file descriptor whose URI is specified
+// by the given `schemaURI`.
+func SerializeSimpleMessage(path string, schemaURI string) error {
 
 	message := newSimpleMessage()
-	return SerializeMessage(path, "SinmpleMessage", message)
+	return SerializeMessage(path, "SinmpleMessage", schemaURI, message)
 }
 
-func SerializeComplexMessage(path string) error {
+// SerializeComplexMessage persists to the specified path a cloud event
+// that contains as payload a random ComplexMessage encoded as a protobuf
+// binary in base64. The cloud event generated contains attributes to
+// enable consumers to retrieve the file descriptor whose URI is specified
+// by the given `schemaURI`.
+func SerializeComplexMessage(path string, schemaURI string) error {
 
 	message := newComplexMessage()
-	return SerializeMessage(path, "ComplexMessage", message)
+	return SerializeMessage(path, "ComplexMessage", schemaURI, message)
 }
 
-func SerializeImportedMessage(path string) error {
+// SerializeImportMessage persists to the specified path a cloud event
+// that contains as payload a random ImportMessage encoded as a protobuf
+// binary in base64. The cloud event generated contains attributes to
+// enable consumers to retrieve the file descriptor whose URI is specified
+// by the given `schemaURI`.
+func SerializeImportMessage(path string, schemaURI string) error {
 
 	message := newImportMessage()
-	return SerializeMessage(path, "ImportMessage", message)
+	return SerializeMessage(path, "ImportMessage", schemaURI, message)
 }
 
-func SerializeComposedMessage(path string) error {
+// SerializeComposedMessage persists to the specified path a cloud event
+// that contains as payload a random ComposedMessage encoded as a protobuf
+// binary in base64. The cloud event generated contains attributes to
+// enable consumers to retrieve the file descriptor whose URI is specified
+// by the given `schemaURI`.
+func SerializeComposedMessage(path string, schemaURI string) error {
 
 	message := newComposedMessage()
-	return SerializeMessage(path, "ComposedMessage", message)
+	return SerializeMessage(path, "ComposedMessage", schemaURI, message)
 }
 
-func SerializeMessage(path string, messageType string, message protoreflect.ProtoMessage) error {
+// SerializeMessage implements the heavy-lifting required for emitting a cloud event.
+// It generates a cloud even wrapper and configures it to transport the given message
+// as payload of the event, serialised in base64 binary. The cloud event isntance is
+// then serialised into JSON and persisted to the path specified by the caller. The
+// value of schemaURI is used to provide a reference to the Protobuf file descriptor
+// that can be used by consumer to deserialise the payload of the event.
+func SerializeMessage(path string, messageType string, schemaURI string, message protoreflect.ProtoMessage) error {
 
 	buffer, err := proto.Marshal(message)
 	if err != nil {
@@ -58,11 +84,14 @@ func SerializeMessage(path string, messageType string, message protoreflect.Prot
 	ce.SetSource("http://localhost/publisher")
 	ce.SetSubject("publisher")
 	ce.SetType(messageType)
-	ce.SetDataSchema(fmt.Sprintf("file://protobuf-dynamic-serde/build/root.pb#%s", messageType))
+	ce.SetDataSchema(fmt.Sprintf("%s#%s", schemaURI, messageType))
 	ce.SetData("application/protobuf", buffer)
 	ce.SetTime(time.Now())
 
 	bytes, err := json.Marshal(ce)
+	if err != nil {
+		return err
+	}
 
 	written, err := fp.Write(bytes)
 
@@ -71,11 +100,13 @@ func SerializeMessage(path string, messageType string, message protoreflect.Prot
 	}
 
 	if written != len(bytes) {
-		return errors.New("Could not write the entire buffer to disk.")
+		return errors.New("could not write the entire buffer to disk")
 	}
 	return nil
 }
 
+// newSimpleMessage generates a simple message and
+// returns a pointer to it to the caller.
 func newSimpleMessage() *events.SimpleMessage {
 
 	return &events.SimpleMessage{
@@ -97,6 +128,8 @@ func newSimpleMessage() *events.SimpleMessage {
 	}
 }
 
+// newComplexMessage generates a complex message and
+// returns a pointer to it to the caller.
 func newComplexMessage() *events.ComplexMessage {
 
 	return &events.ComplexMessage{
@@ -113,6 +146,8 @@ func newComplexMessage() *events.ComplexMessage {
 	}
 }
 
+// newImportMessage generates a import message
+// and returns a pointer to it to the caller.
 func newImportMessage() *events.ImportMessage {
 
 	return &events.ImportMessage{
@@ -124,6 +159,8 @@ func newImportMessage() *events.ImportMessage {
 	}
 }
 
+// newComposedMessage generates a composed message
+// and returns a pointer to it to the caller.
 func newComposedMessage() *events.ComposedMessage {
 
 	return &events.ComposedMessage{

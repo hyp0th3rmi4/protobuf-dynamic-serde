@@ -1,0 +1,10 @@
+# build artefacts (binary and descriptors)
+build/*
+consumer/target
+
+# protbuf bindings for the producer
+publisher/pkg/events/*
+
+# temporary files used for testing
+# and trying out the commands
+tmp/*

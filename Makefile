@@ -36,4 +36,5 @@ consume-event: build/consumer.jar
 clean:
 	-rm -rf build
 	-rm -rf tmp
-	-rm -rf publisher/pkg/events	
+	-rm -rf publisher/pkg/events
+	cd consumer && mvn clean	

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package hyp0th3rmi4.protobuf.sample;
 
-option go_package = "events/v1;events";
+option go_package = "pkg/events/v1;events";
 
 enum Values {
     VALUE_NULL  = 0;

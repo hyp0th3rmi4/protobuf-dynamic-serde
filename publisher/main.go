@@ -1,6 +1,6 @@
 package main
 
-import "cmd/publisher"
+import "publisher/cmd/publisher"
 
 func main() {
 	publisher.Execute()

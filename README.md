@@ -7,7 +7,7 @@ The application is composed by:
 - a producer application written in go that has a static linking to the protobuf message types
 - a consumer application written in Java that relies upon the file descriptor to convert the binary protobuf into a corresponding JSON document
 
-The application uses an envelope for the protobuf binary that carries information about where to fetch the FileDescriptor for the content to deserialise along with an indication of the encoded root message. We use the CloudEvent specification to implement the envelop as it natively supports encoding in base64 of binary data and means to transport schema information, but the structure of the envelope is not need to necessarily be a CloudEvent.
+The application uses an envelope for the protobuf binary that carries information about where to fetch the FileDescriptor for the content to deserialise along with an indication of the encoded root message. We use the CloudEvent specification to implement the envelop as it natively supports encoding in base64 of binary data and means to transport schema information, but the structure of the envelope does not need to necessarily be a CloudEvent.
 
 
 ## Run the Example

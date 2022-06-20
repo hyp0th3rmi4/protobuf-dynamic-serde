@@ -1,6 +1,13 @@
 package com.github.hyp0th3rmi4.protobuf.dynamic;
 
+
+import java.io.PrintWriter;
+import java.text.ParseException;
+
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 
@@ -54,7 +61,7 @@ public class Driver {
         try {
 
             // parse command line arguments
-            CommandLine cmdLine = parser.parser(options, commandLineArguments);
+            CommandLine cmdLine = parser.parse(options, args);
 
             // extract parameter values.
             String sourcePath = cmdLine.getOptionValue(Driver.SOURCE_PATH_OPTION);
@@ -66,14 +73,22 @@ public class Driver {
 
         } catch(ParseException pex) {
 
-            System.out.println("Error:")
-            System.out.println("Error while parsing arguments: " + pex.getMessage())
+            System.out.println("Error:");
+            System.out.println("Error while parsing arguments: " + pex.getMessage());
             System.out.println();
 
-            Driver.printUsage(options);
-            Driver.printHelp(options);
+            Driver.showUsage(options);
+            Driver.showHelp(options);
 
             exitCode = 1;
+        
+        } catch(Exception ex) {
+
+            System.out.println("Error:");
+            System.out.println("Conversion: " + ex.getMessage());
+            System.out.println();
+
+            exitCode = 2;
         }
 
         System.exit(exitCode);
@@ -100,7 +115,7 @@ public class Driver {
             .required(false)
             .hasArg(true)
             .longOpt(Driver.TARGET_PATH_OPTION)
-            .desc("Path to the file that will store the payload of the event converted from protobuf to JSON (if omitted the JSON is dumped to the console)."))
+            .desc("Path to the file that will store the payload of the event converted from protobuf to JSON (if omitted the JSON is dumped to the console).")
             .build();
 
         final Options options = new Options();

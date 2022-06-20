@@ -32,6 +32,7 @@
     <finalName>${project.artifactId}</finalName>
      <plugins>
         <plugin>
+            <?m2e execute onConfiguration,onIncremental?>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-compiler-plugin</artifactId>
             <version>3.10.1</version>

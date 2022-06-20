@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package hyp0th3rmi4.protobuf.sample;
+
+option go_package = "events/v1;events";
+
+
+import "imports/sub_message.proto";
+import "google/protobuf/timestamp.proto";
+
+
+message SimpleMessage {
+
+    string      param_01    = 1;
+    bool        param_02    = 2;
+    bytes       param_03    = 3;
+    int32       param_04    = 4;
+    int64       param_05    = 5;
+    uint32      param_06    = 6;
+    uint64      param_07    = 7;
+    sint32      param_08    = 8;
+    sint64      param_09    = 9;
+    fixed32     param_10    = 10;
+    fixed64     param_11    = 11;
+    sfixed32    param_12    = 12;
+    sfixed64    param_13    = 13;
+    float       param_14    = 14;
+    double      param_15    = 15;
+}
+
+
+message ComplexMessage {
+
+    repeated string param_01     = 1;
+    map<string, string> param_02 = 2;
+    oneof param_03 {
+        string  param_03_string  = 3;            
+        bytes   param_03_bytes   = 4; 
+    }
+
+}
+
+message ComposedMessage {
+
+    SimpleMessage param_01      = 1;   
+    ComplexMessage param_02     = 2;
+
+}
+
+
+message ImportMessage {
+    google.protobuf.Timestamp param_01  = 1;
+    SubMessage param_02                 = 2;
+
+}
+

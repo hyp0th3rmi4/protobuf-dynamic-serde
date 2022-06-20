@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package hyp0th3rmi4.protobuf.sample;
+
+option go_package = "events/v1;events";
+
+enum Values {
+    VALUE_NULL  = 0;
+    VALUE_1     = 1;
+    VALUE_2     = 2;
+}
+
+
+message SubMessage {
+
+    Values param_01 = 1;
+    string param_02 = 2;
+}

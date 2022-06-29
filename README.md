@@ -79,9 +79,31 @@ Once your environment is fully set up do the following:
 
 ```
 
+## Operating Modes
+
+The sample allows you to perform different tasks in terms of serialisation/deserialisation:
+
+- 💥 `make protos`: generating Go bindings for protobuf definitions of a set of test messages, with an associated file descriptor set 
+- 💥 `make publish-event`: publishing a cloud event in Go, with a protobuf binary encoded as base64 string in the data attribute
+- 💥 `make publish-raw`: publishing a byte array representing a serialised protobuf message in Go (i.e. `make publish-raw`)
+- 💥 `make parse-event`: parsing a cloud event in Go, and converting the data payload from a base64 protobuf binary into a corresponding JSON representation by using a file descriptor for the type resolution 
+- 💥 `make parse-raw`: parsing a byte array representing a serialised protobuf message in Go and converting it into a corresponding JSON representation by using a file descriptor for the type resolution
+- 🚫 `make consume-event`: consuming a cloud event in Java, with a protobuf binary encoded as based64 string in the data attribute and converting it into the corresponding JSON structure by using a file descriptor for the type resolution
+- 🚫 `make consume-raw`: consuming a byte array representing a serialised protobuf message in Java and converting it into the corresponding JSON structure by using a file descriptor for the type resolution
+
+The parsing behaviour produces a JSON document where the following types are rendered as strings:
+
+- `bytes`
+- `int64` 
+- `sint64`
+- `fixed64`
+- `sfixed64`
+
+This seems to be a bug in the `protojson` library. An alternative would be creating a tree walker to produce the JSON by hand, and address these issues.
+
+In addition, it is also possible to run the parsing behaviour by resolving the type descriptor from a static type representing the type serialised. This is accomplished by setting `--dynamic=false` and what this does is ignoring the file descriptor set, and resolving the type descriptor by mapping the type name encoded in the URL fragment of the schema to the corresponding statically linked type of the messages used for the purpose of testing. This is rather uninteresting, but primarily used for the purpose of testing during development.
 
 ## Notes
 
 - This is a __work in progress__ and not production code. 
-- At present time, any attempt to read the protobuf binary, besides the use of protoc --decode-raw has been unsuccessful. :(
-- Deserialisation via static typing in Go works, but as soon we use `dynamicpb.NewMessage(MessageDescriptor)` we encounter deserialisation errors
+- The Java consumer uses the same philosophy implemented for the parsing behaviour in Go, but for some reason the binary file is not able to be read correctly.

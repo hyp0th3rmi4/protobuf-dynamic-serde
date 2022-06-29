@@ -23,9 +23,9 @@ var parseCmd = &cobra.Command{
 		var result map[string]interface{}
 		var err error
 		if isRaw {
-			result, err = parser.ParseRaw(sourcePath, schemaURI)
+			result, err = parser.ParseRaw(sourcePath, schemaURI, isDynamic)
 		} else {
-			result, err = parser.ParseCloudEvent(sourcePath, schemaURI)
+			result, err = parser.ParseCloudEvent(sourcePath, schemaURI, isDynamic)
 		}
 		if err != nil {
 			fmt.Println("Error while parsing message:" + err.Error())
@@ -78,6 +78,7 @@ func writeToTarget(targetPath string, content interface{}) error {
 // and adds it to the root command.
 func init() {
 	rootCmd.AddCommand(parseCmd)
+	parseCmd.Flags().BoolVarP(&isDynamic, "dynamic", "d", true, "Uses dynamic type resolution to deserialise protobuf binary")
 	parseCmd.Flags().BoolVarP(&isRaw, "raw", "r", false, "Determine whether to emit the message as a raw protobuf binary (default) or wrapped in a CloudEvent structure")
 	parseCmd.Flags().StringVarP(&sourcePath, "source_path", "s", "", "Path to the file where to read the message or CloudEvent from")
 	parseCmd.Flags().StringVarP(&targetPath, "target_path", "t", "", "Path to the file where to store the message (existing files will be overwritten)")

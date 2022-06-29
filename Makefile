@@ -33,7 +33,7 @@ parse-event: build/publisher
 
 .PHONY: parse-raw
 parse-raw: build/publisher
-	build/publisher parse --raw --schema_uri $(MESSAGE_SCHEMA_URI) --source_path tmp/message.bin --target_path tmp/cloud-event-deserialised-go.json
+	build/publisher parse --raw --dynamic=true --schema_uri $(MESSAGE_SCHEMA_URI) --source_path tmp/message.bin --target_path tmp/cloud-event-deserialised-go.json
 
 .PHONY: consumer
 consumer: build/consumer.jar

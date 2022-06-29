@@ -28,6 +28,11 @@ var schemaURI string
 // as a raw binary protobuf or not.
 var isRaw bool
 
+// isDynamic determines whether to use dynamic type resolution
+// or statically linked types to convert the protobuf binary
+// into a corresponding protobuf message
+var isDynamic bool
+
 // rootCmd is the root command for the publisher
 // executable.
 var rootCmd = &cobra.Command{

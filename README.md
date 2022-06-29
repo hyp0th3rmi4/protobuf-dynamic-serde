@@ -20,7 +20,7 @@ To try out the example (once it will be completed) do the following:
 - install Golang with modules support
 - install protobuf bindings for go (i.e. `go install google.golang.org/protobuf/cmd/protoc-gen-go@latest`)
 - install Java 1.8
-- install Maven (see [here](https://maven.apache.org/install.html)]
+- install Maven (see [here](https://maven.apache.org/install.html))
 
 
 Once your environment is fully set up do the following:

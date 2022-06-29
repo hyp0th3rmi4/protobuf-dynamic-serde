@@ -84,3 +84,4 @@ Once your environment is fully set up do the following:
 
 - This is a __work in progress__ and not production code. 
 - At present time, any attempt to read the protobuf binary, besides the use of protoc --decode-raw has been unsuccessful. :(
+- Deserialisation via static typing in Go works, but as soon we use `dynamicpb.NewMessage(MessageDescriptor)` we encounter deserialisation errors

@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -23,9 +24,12 @@ import static com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import static com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import static com.google.protobuf.Descriptors.Descriptor;
 import static com.google.protobuf.Descriptors.FieldDescriptor;
+import static com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.DynamicMessage;
+import com.google.protobuf.ProtocolStringList;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.builder.CloudEventBuilder;
+import io.cloudevents.core.provider.EventFormatProvider;
 import io.cloudevents.jackson.JsonFormat;
 import io.cloudevents.jackson.JsonCloudEventData;
 
@@ -75,10 +79,13 @@ public class JsonConverter {
     public void convertFromRaw(String sourcePath, String targetPath, String schemaUri) throws Exception {
 
         URI uri = new URI(schemaUri);
-        FileDescriptorSet descriptorSet = this.resolveDescriptorSet(uri);
+        Descriptor descriptor = this.resolveDescriptor(uri);
+        if (descriptor == null) {
+            throw new IOException("Type descriptor for specified type not found.");
+        }
 
         byte[] protobuf = Files.readAllBytes(Paths.get(sourcePath));
-        JsonNode message = this.convertMessage(descriptorSet, uri.getFragment(), protobuf);
+        JsonNode message = this.convertMessage(descriptor, uri.getFragment(), protobuf);
         this.writeToTarget(message, targetPath);
 
     }
@@ -117,22 +124,31 @@ public class JsonConverter {
 
         System.out.println(cloudEvent);
 
-        FileDescriptorSet descriptorSet = this.resolveDescriptorSet(cloudEvent.getDataSchema());
+        Descriptor descriptor = this.resolveDescriptor(cloudEvent.getDataSchema());
+        if (descriptor == null) {
+            throw new IOException("Type descriptor for specified type not found.");
+        }
+
 
         // unpack the binary protobuf and convert it
         // to a corresponding payload expressed in 
         // JSON.
         String messageType = cloudEvent.getDataSchema().getFragment();
         byte[] protobuf = cloudEvent.getData().toBytes();
-        JsonNode message = this.convertMessage(descriptorSet, messageType, protobuf);
+        JsonNode message = this.convertMessage(descriptor, messageType, protobuf);
         JsonCloudEventData newData = JsonCloudEventData.wrap(message);
 
         // regenerate the Cloud Event with the new payload.
         
         CloudEvent jsonCloudEvent = this.repackageEvent(cloudEvent, newData);
+        byte[] bytes = EventFormatProvider
+                            .getInstance()
+                            .resolveFormat(JsonFormat.CONTENT_TYPE)
+                            .serialize(jsonCloudEvent);
 
+        JsonNode json = this.mapper.readTree(bytes);
 
-        this.writeToTarget(jsonCloudEvent, targetPath);
+        this.writeToTarget(json, targetPath);
         
 
     }
@@ -156,6 +172,42 @@ public class JsonConverter {
         byte[] buffer = Files.readAllBytes(path);
         JsonFormat format = new JsonFormat();
         return format.deserialize(buffer);
+    }
+
+
+    /**
+     * Resolves the type descriptor associated to the schema pointeed by the given
+     * <i>dataSchemaUri</i>. The implementation builds a file descriptor set from
+     * the file pointed by the schema and then resolves the associated instance of
+     * the file descriptor that defines the message type. It queries such descriptor
+     * to resolve the type descriptor.
+     * 
+     * @param dataSchemaUri a {@link URI} instance that points to the file that
+     *                      stores the information about the file descriptor set.
+     *                      The convention is that the path component represents
+     *                      the file, while the fragment the message type.
+     * 
+     * @return  a {@link Descriptor} instance representing the type metadata needed
+     *          to parse a protobuf message of the type described. It can be {@literal 
+     *          null} if not found.
+     */
+    protected Descriptor resolveDescriptor(URI dataSchemaUri) throws Exception {
+        FileDescriptorSet descriptorSet = this.resolveDescriptorSet(dataSchemaUri);
+
+        Map<String, FileDescriptorProto> map = new HashMap<String, FileDescriptorProto>();
+		List<FileDescriptorProto> fileDescProtos = descriptorSet.getFileList();
+		for (FileDescriptorProto fileDescProto : fileDescProtos) {
+			map.put(fileDescProto.getName(), fileDescProto);
+		}
+        FileDescriptorProto root = map.get("root.proto");
+
+        FileDescriptor[] dependencies = getDependencies(map, root);
+        FileDescriptor fileDescriptor = FileDescriptor.buildFrom(root, dependencies);
+
+        String messageType = dataSchemaUri.getFragment();
+
+        return fileDescriptor.findMessageTypeByName(messageType);
+
     }
 
     /**
@@ -196,17 +248,15 @@ public class JsonConverter {
      * Serialises as a JSON document the given entity and saves it to the specified 
      * filePath if specified, otherwise it dumps the output to the standard output.
      * 
-     * @param entity        a {@link Object} instance representing the entity  to be 
-     *                      serialised as JSON. This can either be an instance of {@link 
-     *                      CloudEvent} or a {@link JsonNode}.
+     * @param entity        a {@link JsonNode} instance representing the entity to be 
+     *                      serialised as JSON. 
      * 
      * @param targetPath    a {@link String} pointing to the file system location where 
      *                      to persist the JSON representation of <i>entity</i>. If not 
      *                      specified the output is the console.
      */
-    protected void writeToTarget(Object entity, String targetPath) throws IOException {
+    protected void writeToTarget(JsonNode entity, String targetPath) throws IOException {
 
-        
         ObjectWriter jsonWriter = this.mapper.writerWithDefaultPrettyPrinter();
         if (targetPath == null) {
             try (FileWriter writer = new FileWriter(targetPath, true)) {
@@ -245,9 +295,8 @@ public class JsonConverter {
      * Converts the message from its protobuf binary representation into a corresponding JSON
      * structure by leveraging the information supplied by the given file descriptor set.
      * 
-     * @param descriptorSet     a {@link DescriptorProtos.FileDescriptorSet} instance that 
-     *                          describes the schema of the entity peristed in the binary
-     *                          protobuf.
+     * @param type              a {@link Descriptors.Descriptor} instance that describes the
+     *                          schema of the entity peristed in the binary protobuf.
      * 
      * @param messageType       a {@link String} representing the type of the root message
      *                          serialised in the bytes array.
@@ -255,13 +304,7 @@ public class JsonConverter {
      * @param protobuf          a {@literal byte} array containing the serialised version of
      *                          the protobuf entity.
      */
-    protected JsonNode convertMessage(FileDescriptorSet descriptorSet, String messageType, byte[] protobuf) throws IOException {
-
-
-        Descriptor type = this.findTypeForMessage(descriptorSet, messageType);
-        if (type == null) {
-            throw new IOException("Could not find message type: " + messageType);
-        }
+    protected JsonNode convertMessage(Descriptor type, String messageType, byte[] protobuf) throws IOException {
         
         DynamicMessage message = DynamicMessage.parseFrom(type, protobuf);
         ObjectNode root = this.mapper.createObjectNode();
@@ -463,5 +506,36 @@ public class JsonConverter {
         } else {
             node.putNull(name);
         }
+    }
+
+    /**
+     * Resolves the dependencies associated to the specified <i>fileDescProto</i> and returns the corresponding
+     * {@link Descriptors.FileDescriptor} instances, by using the associated map <i>fileDescProtos</i>.
+     * 
+     * @param fileDescProtos    a {@link Map} implementation that stores all the protobuf representations of the
+     *                          file descriptors.
+     * 
+     * @param fileDescProto     a {@link FileDescriptorProto} instance representing the file descriptor protobuf
+     *                          for which we want to retrieve the dependencies.
+     */
+    protected static FileDescriptor[] getDependencies(Map<String, FileDescriptorProto> fileDescProtos, FileDescriptorProto fileDescProto) throws Exception {
+        
+        if (fileDescProto.getDependencyCount() == 0) {
+            return new FileDescriptor[0];
+        }
+        
+        ProtocolStringList dependencyList = fileDescProto.getDependencyList();
+        String[] dependencyArray = dependencyList.toArray(new String[0]);
+        int noOfDependencies = dependencyList.size();
+        
+        FileDescriptor[] dependencies = new FileDescriptor[noOfDependencies];
+        
+        for (int i = 0; i < noOfDependencies; i++) {
+            FileDescriptorProto dependencyFileDescProto =  fileDescProtos.get(dependencyArray[i]);
+            FileDescriptor dependencyFileDesc = FileDescriptor.buildFrom(dependencyFileDescProto, getDependencies(fileDescProtos, dependencyFileDescProto));
+            dependencies[i] = dependencyFileDesc;
+        }
+        
+        return dependencies;
     }
 }

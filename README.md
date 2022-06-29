@@ -88,8 +88,8 @@ The sample allows you to perform different tasks in terms of serialisation/deser
 - 💥 `make publish-raw`: publishing a byte array representing a serialised protobuf message in Go (i.e. `make publish-raw`)
 - 💥 `make parse-event`: parsing a cloud event in Go, and converting the data payload from a base64 protobuf binary into a corresponding JSON representation by using a file descriptor for the type resolution 
 - 💥 `make parse-raw`: parsing a byte array representing a serialised protobuf message in Go and converting it into a corresponding JSON representation by using a file descriptor for the type resolution
-- 🚫 `make consume-event`: consuming a cloud event in Java, with a protobuf binary encoded as based64 string in the data attribute and converting it into the corresponding JSON structure by using a file descriptor for the type resolution
-- 🚫 `make consume-raw`: consuming a byte array representing a serialised protobuf message in Java and converting it into the corresponding JSON structure by using a file descriptor for the type resolution
+- 🚧 `make consume-event`: consuming a cloud event in Java, with a protobuf binary encoded as based64 string in the data attribute and converting it into the corresponding JSON structure by using a file descriptor for the type resolution
+- 🚧 `make consume-raw`: consuming a byte array representing a serialised protobuf message in Java and converting it into the corresponding JSON structure by using a file descriptor for the type resolution
 
 The parsing behaviour produces a JSON document where the following types are rendered as strings:
 
@@ -106,4 +106,5 @@ In addition, it is also possible to run the parsing behaviour by resolving the t
 ## Notes
 
 - This is a __work in progress__ and not production code. 
-- The Java consumer uses the same philosophy implemented for the parsing behaviour in Go, but for some reason the binary file is not able to be read correctly.
+- The Java consumer uses the same philosophy implemented for the parsing behaviour in Go, but the generation of the JSON is manual and yet to be completed. It works for simple types.
+

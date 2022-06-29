@@ -25,6 +25,7 @@ import static com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import static com.google.protobuf.Descriptors.Descriptor;
 import static com.google.protobuf.Descriptors.FieldDescriptor;
 import static com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.ProtocolStringList;
 import io.cloudevents.CloudEvent;
@@ -370,6 +371,7 @@ public class JsonConverter {
 
             ArrayNode array = this.mapper.createArrayNode();
             // the value is then an iterable
+            int index = 0;
             Iterable<?> items = (Iterable<?>) value; 
             for(Object item : items) {
                 Object itemValue = this.getNonRepeatedValue(metadata, item);
@@ -381,7 +383,19 @@ public class JsonConverter {
                             array.add((boolean) itemValue);
                         break;
                         case BYTE_STRING:
-                            array.add((byte[]) itemValue);
+                            if (itemValue instanceof ByteString) {
+                                
+                                byte[] bytes = ((ByteString) itemValue).toByteArray();
+                                array.add(bytes);
+
+                            } else if (itemValue instanceof byte[]) {
+
+                                array.add((byte[]) itemValue);
+                            
+                            } else {
+
+                                this.output.println(String.format("<-- SKIP --> Unexpected type for %1$s[%2$d] (type: %3$s)", metadata.getName(), index, itemValue.getClass().getCanonicalName()));
+                            }
                         break;
                         case DOUBLE:
                             array.add((double) itemValue);
@@ -402,9 +416,10 @@ public class JsonConverter {
                             array.add((JsonNode) itemValue);
                         break;
                         default:
-                            this.output.println("<-- SKIP --> Unexpected type for array (type: " + itemValue.getClass().getCanonicalName() + ").");
+                            this.output.println(String.format("<-- SKIP --> Unexpected type for %1$s[%2$d] (type: %3$s)", metadata.getName(), index, itemValue.getClass().getCanonicalName()));
                         break;
                     }
+                    index++;
                 }
             }
             fieldValue = array;
@@ -499,8 +514,13 @@ public class JsonConverter {
                     case "java.lang.String":
                         node.put(name, (String) value);
                     break;
+                    case "com.google.protobuf.ByteString.LiteralByteString":
+                        ByteString bytes = (ByteString) value;
+                        byte[] array = bytes.toByteArray();
+                        node.put(name, array);
+                    break;
                     default:
-                        this.output.println("<-- SKIP --> " + name + " (type: " + value.getClass().getCanonicalName() + ")");
+                        this.output.println(String.format("<-- SKIP --> %1$s (type: %2$s)", name, value.getClass().getCanonicalName()));
                 }
             }
         } else {

@@ -22,10 +22,10 @@ import (
 // binary in base64. The cloud event generated contains attributes to
 // enable consumers to retrieve the file descriptor whose URI is specified
 // by the given `schemaURI`.
-func SerializeSimpleMessage(path string, schemaURI string) error {
+func SerializeSimpleMessage(path string, schemaURI string, isRaw bool) error {
 
 	message := newSimpleMessage()
-	return SerializeMessage(path, "SinmpleMessage", schemaURI, message)
+	return SerializeMessage(path, "SimpleMessage", schemaURI, message, isRaw)
 }
 
 // SerializeComplexMessage persists to the specified path a cloud event
@@ -33,10 +33,10 @@ func SerializeSimpleMessage(path string, schemaURI string) error {
 // binary in base64. The cloud event generated contains attributes to
 // enable consumers to retrieve the file descriptor whose URI is specified
 // by the given `schemaURI`.
-func SerializeComplexMessage(path string, schemaURI string) error {
+func SerializeComplexMessage(path string, schemaURI string, isRaw bool) error {
 
 	message := newComplexMessage()
-	return SerializeMessage(path, "ComplexMessage", schemaURI, message)
+	return SerializeMessage(path, "ComplexMessage", schemaURI, message, isRaw)
 }
 
 // SerializeImportMessage persists to the specified path a cloud event
@@ -44,10 +44,10 @@ func SerializeComplexMessage(path string, schemaURI string) error {
 // binary in base64. The cloud event generated contains attributes to
 // enable consumers to retrieve the file descriptor whose URI is specified
 // by the given `schemaURI`.
-func SerializeImportMessage(path string, schemaURI string) error {
+func SerializeImportMessage(path string, schemaURI string, isRaw bool) error {
 
 	message := newImportMessage()
-	return SerializeMessage(path, "ImportMessage", schemaURI, message)
+	return SerializeMessage(path, "ImportMessage", schemaURI, message, isRaw)
 }
 
 // SerializeComposedMessage persists to the specified path a cloud event
@@ -55,10 +55,10 @@ func SerializeImportMessage(path string, schemaURI string) error {
 // binary in base64. The cloud event generated contains attributes to
 // enable consumers to retrieve the file descriptor whose URI is specified
 // by the given `schemaURI`.
-func SerializeComposedMessage(path string, schemaURI string) error {
+func SerializeComposedMessage(path string, schemaURI string, isRaw bool) error {
 
 	message := newComposedMessage()
-	return SerializeMessage(path, "ComposedMessage", schemaURI, message)
+	return SerializeMessage(path, "ComposedMessage", schemaURI, message, isRaw)
 }
 
 // SerializeMessage implements the heavy-lifting required for emitting a cloud event.
@@ -67,7 +67,7 @@ func SerializeComposedMessage(path string, schemaURI string) error {
 // then serialised into JSON and persisted to the path specified by the caller. The
 // value of schemaURI is used to provide a reference to the Protobuf file descriptor
 // that can be used by consumer to deserialise the payload of the event.
-func SerializeMessage(path string, messageType string, schemaURI string, message protoreflect.ProtoMessage) error {
+func SerializeMessage(path string, messageType string, schemaURI string, message protoreflect.ProtoMessage, isRaw bool) error {
 
 	buffer, err := proto.Marshal(message)
 	if err != nil {
@@ -79,27 +79,32 @@ func SerializeMessage(path string, messageType string, schemaURI string, message
 		return err
 	}
 
-	ce := cloudevents.NewEvent()
-	ce.SetID(uuid.New().String())
-	ce.SetSource("http://localhost/publisher")
-	ce.SetSubject("publisher")
-	ce.SetType(messageType)
-	ce.SetDataSchema(fmt.Sprintf("%s#%s", schemaURI, messageType))
-	ce.SetData("application/protobuf", buffer)
-	ce.SetTime(time.Now())
+	if !isRaw {
 
-	bytes, err := json.Marshal(ce)
+		ce := cloudevents.NewEvent()
+		ce.SetID(uuid.New().String())
+		ce.SetSource("http://localhost/publisher")
+		ce.SetSubject("publisher")
+		ce.SetType(messageType)
+		ce.SetDataSchema(fmt.Sprintf("%s#%s", schemaURI, messageType))
+		ce.SetData("application/protobuf", buffer)
+		ce.SetTime(time.Now())
+
+		bytes, err := json.Marshal(ce)
+		if err != nil {
+			return err
+		}
+
+		buffer = bytes
+	}
+
+	written, err := fp.Write(buffer)
+
 	if err != nil {
 		return err
 	}
 
-	written, err := fp.Write(bytes)
-
-	if err != nil {
-		return err
-	}
-
-	if written != len(bytes) {
+	if written != len(buffer) {
 		return errors.New("could not write the entire buffer to disk")
 	}
 	return nil

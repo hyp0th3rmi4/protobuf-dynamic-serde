@@ -22,6 +22,19 @@ import org.apache.commons.cli.Options;
 public class Driver {
 
     /**
+     * Long name of the command line option that indicates the
+     * source format of the content to interpret and deserialise.
+     */
+    private static final String RAW_OPTION  = "raw";
+
+    /**
+     * Long name of the command line option that stores a reference
+     * to the URI of the schema used to interpret the protobuf
+     * binary representing the message.
+     */
+    private static final String SCHEMA_URI_OPTION = "schema_uri";
+
+    /**
      * Long name of the command line option storing the path to the
      * file that contains the cloudevent instance encoded in JSON
      * format.
@@ -66,10 +79,24 @@ public class Driver {
             // extract parameter values.
             String sourcePath = cmdLine.getOptionValue(Driver.SOURCE_PATH_OPTION);
             String targetPath = cmdLine.hasOption(Driver.TARGET_PATH_OPTION) ? cmdLine.getOptionValue(Driver.TARGET_PATH_OPTION) : null;
-
+            boolean isRaw = cmdLine.hasOption(Driver.RAW_OPTION);
 
             JsonConverter converter = new JsonConverter();
-            converter.convert(sourcePath, targetPath);
+            if (isRaw) {
+
+                if (cmdLine.hasOption(Driver.SCHEMA_URI_OPTION)) {
+
+                    String schemaUri = cmdLine.getOptionValue(Driver.SCHEMA_URI_OPTION);
+                    converter.convertFromRaw(sourcePath, targetPath, schemaUri);
+                
+                } else {
+                    throw new Exception("Invalid arguments: --raw (-r) was specified without a schema URI.");
+                }
+
+            } else  {
+
+                converter.convertFromCloudEvent(sourcePath, targetPath);
+            }
 
         } catch(ParseException pex) {
 
@@ -85,7 +112,8 @@ public class Driver {
         } catch(Exception ex) {
 
             System.out.println("Error:");
-            System.out.println("Conversion: " + ex.getMessage());
+            System.out.println("Type: " + ex.getClass().getName());
+            System.out.println("Message: " + ex.getMessage());
             System.out.println();
 
             exitCode = 2;
@@ -104,6 +132,20 @@ public class Driver {
      */
     private static Options newOptions() {
 
+        final Option schemaUri = Option.builder("u")
+            .required(false)
+            .hasArg(true)
+            .longOpt(Driver.SCHEMA_URI_OPTION)
+            .desc("URI to the schema definition for the message stored in the protobuf binary. This parameter is only considered when the --raw option is passed, otherwise the 'dataschema' attribute will be considered when the source format is a cloud event.")
+            .build();
+
+        final Option raw = Option.builder("r")
+            .required(false)
+            .hasArg(false)
+            .longOpt(Driver.RAW_OPTION)
+            .desc("If specified the source file is interpreted as a raw protobuf binary representing the message, rather than a JSON representation of a CloudEvent with a base64 protobuf binary for payload.")
+            .build();
+
         final Option sourcePath = Option.builder("s")
             .required(true)
             .hasArg(true)
@@ -119,6 +161,8 @@ public class Driver {
             .build();
 
         final Options options = new Options();
+        options.addOption(raw);
+        options.addOption(schemaUri);
         options.addOption(sourcePath);
         options.addOption(targetPath);
 

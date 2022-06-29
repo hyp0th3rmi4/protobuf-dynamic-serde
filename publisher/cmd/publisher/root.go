@@ -7,6 +7,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// messageType stores the specified value for the type
+// of message to emit.
+var messageType string
+
+// sourcePath points to a location storing the serialised
+// data to be consumed.
+var sourcePath string
+
+// messagePath stores the specified value for the path
+// where to save the file containing the event emitted.
+var targetPath string
+
+// schemaURI stores the specified value for the root
+// URI that points to the file descriptor associated
+// to the message payload.
+var schemaURI string
+
+// isRaw determines whether the message should be emitted
+// as a raw binary protobuf or not.
+var isRaw bool
+
 // rootCmd is the root command for the publisher
 // executable.
 var rootCmd = &cobra.Command{

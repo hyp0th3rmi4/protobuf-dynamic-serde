@@ -31,6 +31,7 @@ var isRaw bool
 // rootCmd is the root command for the publisher
 // executable.
 var rootCmd = &cobra.Command{
+
 	Use:   "publisher",
 	Short: "publisher - a simple cloud event publisher",
 	Long: `publisher is a simple command line utility used to generate a cloud event and set its 
@@ -45,6 +46,7 @@ var rootCmd = &cobra.Command{
 
 // Execute executes the command.
 func Execute() {
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Whoops. There was an error while executing your CLI '%s'", err)
 		os.Exit(1)

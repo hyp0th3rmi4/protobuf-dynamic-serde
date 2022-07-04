@@ -106,5 +106,9 @@ In addition, it is also possible to run the parsing behaviour by resolving the t
 ## Notes
 
 - This is a __work in progress__ and not production code. 
-- The Java consumer uses the same philosophy implemented for the parsing behaviour in Go, but the generation of the JSON is manual and yet to be completed. It works for simple types.
+- The Java consumer uses the same philosophy implemented for parsing in Go, but uses a custom JSON converter that has incremental support:
+  - Can parse message with simple types (primitive protobuf types)
+  - Can parse repeated and map fields
+  - Can parse composed messages (messages with non primitive types, but other defined messages)
+
 

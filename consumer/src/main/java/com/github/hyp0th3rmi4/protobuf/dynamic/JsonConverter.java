@@ -46,7 +46,8 @@ import io.cloudevents.jackson.JsonCloudEventData;
  */
 public class JsonConverter {
 
-
+    public static final String KEY_ATTRIBUTE = "key";
+    public static final String VALUE_ATTRIBUTE = "value";
 
     /**
      * A {@link ObjectMapper} instance used to both serialise the 
@@ -294,7 +295,9 @@ public class JsonConverter {
 
     /**
      * Converts the message from its protobuf binary representation into a corresponding JSON
-     * structure by leveraging the information supplied by the given file descriptor set.
+     * structure by leveraging the information supplied by the given file descriptor set. The
+     * implementation defers the heavy lifting to the {@link JsonConverter#mapMessage(DynamicMessage)}
+     * method to produce the {@link JsonNode} instance mapping the given messge.
      * 
      * @param type              a {@link Descriptors.Descriptor} instance that describes the
      *                          schema of the entity peristed in the binary protobuf.
@@ -308,6 +311,25 @@ public class JsonConverter {
     protected JsonNode convertMessage(Descriptor type, String messageType, byte[] protobuf) throws IOException {
         
         DynamicMessage message = DynamicMessage.parseFrom(type, protobuf);
+
+        return this.mapMessage(message);
+    }
+
+    /**
+     * Traverse the given {@link DynamicMessage} structure and creates the corresponding JSON
+     * structure. The implementation retrieves the metadata and values for all the fields that
+     * are declared by the given message and creates a {@link ObjectNode} containing an entry
+     * for each field represented in its corresponding JSON structure.
+     * 
+     * @param message   a {@link DynamicMessage} instance that contains the metadata and fields
+     *                  values for a generic protobuf message. It is expected to not to be 
+     *                  {@literal null}
+     * 
+     * @return  a {@link JsonNode} implementation that represents the original protobuf message
+     *          in JSON.
+     */
+    protected JsonNode mapMessage(DynamicMessage message) {
+
         ObjectNode root = this.mapper.createObjectNode();
         
         Map<FieldDescriptor, Object> fields = message.getAllFields();
@@ -369,60 +391,95 @@ public class JsonConverter {
 
         if (metadata.isRepeated()) {
 
-            ArrayNode array = this.mapper.createArrayNode();
-            // the value is then an iterable
-            int index = 0;
-            Iterable<?> items = (Iterable<?>) value; 
-            for(Object item : items) {
-                Object itemValue = this.getNonRepeatedValue(metadata, item);
-                if (item == null) {
-                    array.addNull();
-                } else {
-                    switch(metadata.getJavaType()) {
-                        case BOOLEAN:
-                            array.add((boolean) itemValue);
-                        break;
-                        case BYTE_STRING:
-                            if (itemValue instanceof ByteString) {
-                                
-                                byte[] bytes = ((ByteString) itemValue).toByteArray();
-                                array.add(bytes);
+            if (metadata.isMapField()) {
 
-                            } else if (itemValue instanceof byte[]) {
+                ObjectNode map = this.mapper.createObjectNode();
+                Iterable<DynamicMessage> pairs = (Iterable<DynamicMessage>) value;
+                for(DynamicMessage kvp : pairs) {
 
-                                array.add((byte[]) itemValue);
-                            
-                            } else {
-
-                                this.output.println(String.format("<-- SKIP --> Unexpected type for %1$s[%2$d] (type: %3$s)", metadata.getName(), index, itemValue.getClass().getCanonicalName()));
-                            }
-                        break;
-                        case DOUBLE:
-                            array.add((double) itemValue);
-                        break;
-                        case INT:
-                            array.add((int) itemValue);
-                        break;
-                        case FLOAT:
-                            array.add((float) itemValue);
-                        break;
-                        case LONG:
-                            array.add((long) itemValue);
-                        break;
-                        case STRING:
-                            array.add((String) itemValue);
-                        break;
-                        case MESSAGE:
-                            array.add((JsonNode) itemValue);
-                        break;
-                        default:
-                            this.output.println(String.format("<-- SKIP --> Unexpected type for %1$s[%2$d] (type: %3$s)", metadata.getName(), index, itemValue.getClass().getCanonicalName()));
-                        break;
+                    Map<FieldDescriptor, Object> fields = kvp.getAllFields();        
+                    String key = null;
+                    Object v = null;
+                    for(Map.Entry<FieldDescriptor,Object> entry : fields.entrySet()) {
+                        FieldDescriptor field = entry.getKey();
+                        String name = field.getName();
+                        if (name.equals(JsonConverter.KEY_ATTRIBUTE)) {
+                            key = (String) entry.getValue();
+                        } else if (name.equals(JsonConverter.VALUE_ATTRIBUTE)) {
+                            v = this.getNonRepeatedValue(field, entry.getValue());
+                        } else {
+                            this.output.println(String.format("<-- SKIP --> Unexpected attribute for map field %1$s (name: %2$s, type: %3$s)", metadata.getName(), name, v.getClass().getCanonicalName()));
+                        }
                     }
-                    index++;
+                    this.setNodeProperty(map, key, v);
+                    fieldValue = map;
+                } 
+
+            } else {
+
+                ArrayNode array = this.mapper.createArrayNode();
+                // the value is then an iterable
+                int index = 0;
+                Iterable<?> items = (Iterable<?>) value; 
+                for(Object item : items) {
+                    Object itemValue = this.getNonRepeatedValue(metadata, item);
+                    if (item == null) {
+                        array.addNull();
+                    } else {
+                        switch(metadata.getJavaType()) {
+                            case BOOLEAN:
+                                array.add((boolean) itemValue);
+                            break;
+                            case BYTE_STRING:
+                                if (itemValue instanceof ByteString) {
+                                    
+                                    byte[] bytes = ((ByteString) itemValue).toByteArray();
+                                    array.add(bytes);
+    
+                                } else if (itemValue instanceof byte[]) {
+    
+                                    array.add((byte[]) itemValue);
+                                
+                                } else {
+    
+                                    this.output.println(String.format("<-- SKIP --> Unexpected type for %1$s[%2$d] (type: %3$s)", metadata.getName(), index, itemValue.getClass().getCanonicalName()));
+                                }
+                            break;
+                            case DOUBLE:
+                                array.add((double) itemValue);
+                            break;
+                            case INT:
+                                array.add((int) itemValue);
+                            break;
+                            case FLOAT:
+                                array.add((float) itemValue);
+                            break;
+                            case LONG:
+                                array.add((long) itemValue);
+                            break;
+                            case STRING:
+                                array.add((String) itemValue);
+                            break;
+                            case MESSAGE:
+                                array.add((JsonNode) itemValue);
+                            break;
+                            default:
+                                this.output.println(String.format("<-- SKIP --> Unexpected type for %1$s[%2$d] (type: %3$s)", metadata.getName(), index, itemValue.getClass().getCanonicalName()));
+                            break;
+                        }
+                        index++;
+                    }
                 }
+                fieldValue = array;
+
             }
-            fieldValue = array;
+
+            // Map Fields are repeated and modelled as a collection
+            // of key-value pairs. This means that if the field is
+            // repeated, we need to create only one container.
+
+
+           
         } else {
 
             fieldValue = this.getNonRepeatedValue(metadata, value);
@@ -452,26 +509,22 @@ public class JsonConverter {
     protected Object getNonRepeatedValue(FieldDescriptor metadata, Object value) {
 
         Object v = null;
-        if (metadata.isMapField()) {
-            ObjectNode map = this.mapper.createObjectNode();
-            this.output.println("<MAP> " + value);
-            v = map;
-        } else {
-            switch(metadata.getType()) {
-                case ENUM:
-                    this.output.println("<ENUM>: " + value);
-                break;
-                case MESSAGE:
-                    this.output.println("<MESSAGE>: " + value);
-                break;
-                case GROUP:
-                    this.output.println("<GROUP>: " + value);
-                break;
-                default:
-                    v = value;
-                break;
-            }
-        } 
+        switch(metadata.getType()) {
+            case ENUM:
+                this.output.println(String.format("<ENUM> (type: %1$s): %2$s", value.getClass().getCanonicalName(), value));
+            break;
+            case MESSAGE:
+                DynamicMessage dm = (DynamicMessage) value;
+                v = this.mapMessage(dm);
+            break;
+            case GROUP:
+                this.output.println(String.format("<GROUP> (type: %1$s): %2$s", value.getClass().getCanonicalName(), value));
+            break;
+            default:
+                v = value;
+            break;
+        }
+        
 
         return v;
     }

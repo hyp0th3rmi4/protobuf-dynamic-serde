@@ -64,3 +64,14 @@ message EnumMessage {
    Season preferred_season = 1;
 }
 
+
+message NestedMessage {
+   message ProfileMessage {
+      string name    = 1;
+      int32  age     = 2;
+      repeated string interests = 3;
+   }
+
+  repeated ProfileMessage users = 1;
+	
+}

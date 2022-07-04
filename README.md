@@ -111,5 +111,6 @@ In addition, it is also possible to run the parsing behaviour by resolving the t
   - Can parse repeated and map fields
   - Can parse composed messages (messages with non primitive types, but other defined messages)
   - Can parse enum fields
+  - Can parse nested messages
 
 

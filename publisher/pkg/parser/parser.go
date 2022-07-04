@@ -192,6 +192,10 @@ func resolveDescriptor(schemaUri string, isDynamic bool) (protoreflect.MessageDe
 			msg = &events.ImportMessage{}
 		case "ComposedMessage":
 			msg = &events.ComposedMessage{}
+		case "EnumtMessage":
+			msg = &events.EnumMessage{}
+		case "NestedMessage":
+			msg = &events.NestedMessage{}
 		default:
 			return nil, fmt.Errorf("no message matching type: %s", schemaUrl.Fragment)
 		}

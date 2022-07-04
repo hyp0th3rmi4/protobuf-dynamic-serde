@@ -76,6 +76,17 @@ func SerializeEnumMessage(path string, schemaURI string, isRaw bool) error {
 	return SerializeMessage(path, "EnumMessage", schemaURI, message, isRaw)
 }
 
+// SerializeNestedMessage persists to the specified path an `NestedMessage`.
+// The serialisation process can either wrap the serialised protobuf version
+// of the message with a `CloudEvent`` structure or publishing it as it is (raw).
+// In case the message is serialised within a cloud event, then the value of
+// `schemaURI` is used to embed information about the schema of the message
+// to enable dynamic consumption.
+func SerializeNestedMessage(path string, schemaURI string, isRaw bool) error {
+	message := newNestedMessage()
+	return SerializeMessage(path, "NestedMessage", schemaURI, message, isRaw)
+}
+
 // SerializeMessage implements the heavy-lifting required for emitting a cloud event.
 // It generates a cloud even wrapper and configures it to transport the given message
 // as payload of the event, serialised in base64 binary. The cloud event isntance is
@@ -195,5 +206,34 @@ func newEnumMessage() *events.EnumMessage {
 
 	return &events.EnumMessage{
 		PreferredSeason: events.EnumMessage_SPRING,
+	}
+}
+
+// newNestedMessage generates a message that wraps another
+// message definition and uses it to define an attribute
+// of the message.
+func newNestedMessage() *events.NestedMessage {
+
+	return &events.NestedMessage{
+		Users: []*events.NestedMessage_ProfileMessage{
+			{
+				Name: "Malcolm",
+				Age:  32,
+				Interests: []string{
+					"woodworking",
+					"photography",
+					"cooking",
+				},
+			}, {
+				Name: "Sally",
+				Age:  29,
+				Interests: []string{
+					"photography",
+					"basketball",
+					"reading",
+					"movies",
+				},
+			},
+		},
 	}
 }

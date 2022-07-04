@@ -509,6 +509,8 @@ public class JsonConverter {
      */
     protected Object getNonRepeatedValue(FieldDescriptor metadata, Object value) {
 
+        this.output.println(String.format("--> Field: (name: %1$s, type: %2$s, value: %3$s)", metadata.getName(), metadata.getType(), value));
+
         Object v = null;
         switch(metadata.getType()) {
             case ENUM:
@@ -525,7 +527,7 @@ public class JsonConverter {
                 v = value;
             break;
         }
-        
+        this.output.println("<--");
 
         return v;
     }

@@ -182,7 +182,7 @@ func newComplexMessage() *events.ComplexMessage {
 func newImportMessage() *events.ImportMessage {
 
 	return &events.ImportMessage{
-		Param_01: &timestamppb.Timestamp{},
+		Param_01: timestamppb.Now(),
 		Param_02: &events.SubMessage{
 			Param_01: events.Values_VALUE_1,
 			Param_02: "this is nested!",

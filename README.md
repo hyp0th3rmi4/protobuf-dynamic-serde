@@ -88,8 +88,8 @@ The sample allows you to perform different tasks in terms of serialisation/deser
 - 💥 `make publish-raw`: publishing a byte array representing a serialised protobuf message in Go (i.e. `make publish-raw`)
 - 💥 `make parse-event`: parsing a cloud event in Go, and converting the data payload from a base64 protobuf binary into a corresponding JSON representation by using a file descriptor for the type resolution 
 - 💥 `make parse-raw`: parsing a byte array representing a serialised protobuf message in Go and converting it into a corresponding JSON representation by using a file descriptor for the type resolution
-- 🚧 `make consume-event`: consuming a cloud event in Java, with a protobuf binary encoded as based64 string in the data attribute and converting it into the corresponding JSON structure by using a file descriptor for the type resolution
-- 🚧 `make consume-raw`: consuming a byte array representing a serialised protobuf message in Java and converting it into the corresponding JSON structure by using a file descriptor for the type resolution
+- 💥 `make consume-event`: consuming a cloud event in Java, with a protobuf binary encoded as based64 string in the data attribute and converting it into the corresponding JSON structure by using a file descriptor for the type resolution
+- 💥 `make consume-raw`: consuming a byte array representing a serialised protobuf message in Java and converting it into the corresponding JSON structure by using a file descriptor for the type resolution
 
 The parsing behaviour produces a JSON document where the following types are rendered as strings:
 
@@ -106,11 +106,13 @@ In addition, it is also possible to run the parsing behaviour by resolving the t
 ## Notes
 
 - This is a __work in progress__ and not production code. 
-- The Java consumer uses the same philosophy implemented for parsing in Go, but uses a custom JSON converter that has incremental support:
-  - Can parse message with simple types (primitive protobuf types)
-  - Can parse repeated and map fields
-  - Can parse composed messages (messages with non primitive types, but other defined messages)
-  - Can parse enum fields
-  - Can parse nested messages
+- The Java consumer uses the same philosophy implemented for parsing in Go, but uses a custom JSON converter that supports the following features:
+  - messages composed by primitive types
+  - messages with repeated fields
+  - messages with map fields
+  - messages with enum definitions and attributes
+  - messages with nested message definitions and attributes
+  - messages composed by other messages (as attributes)
+  - messages composed by imported message types (as attributes)
 
 

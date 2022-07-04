@@ -54,3 +54,13 @@ message ImportMessage {
 
 }
 
+message EnumMessage {
+   enum Season {
+     WINTER = 0;
+     SPRING = 1;
+     SUMMER = 2;
+     AUTUMN = 3;
+   }
+   Season preferred_season = 1;
+}
+

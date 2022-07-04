@@ -17,6 +17,7 @@ var emitters = map[string]func(string, string, bool) error{
 	"ComplexMessage":  emitter.SerializeComplexMessage,
 	"ComposedMessage": emitter.SerializeComposedMessage,
 	"ImportMessage":   emitter.SerializeImportMessage,
+	"EnumMessage":     emitter.SerializeEnumMessage,
 }
 
 // definition of the command that emits the cloud event

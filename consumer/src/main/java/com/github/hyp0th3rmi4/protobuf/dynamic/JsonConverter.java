@@ -23,6 +23,7 @@ import static com.google.protobuf.DescriptorProtos.DescriptorProto;
 import static com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import static com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import static com.google.protobuf.Descriptors.Descriptor;
+import static com.google.protobuf.Descriptors.EnumValueDescriptor;
 import static com.google.protobuf.Descriptors.FieldDescriptor;
 import static com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.ByteString;
@@ -511,7 +512,7 @@ public class JsonConverter {
         Object v = null;
         switch(metadata.getType()) {
             case ENUM:
-                this.output.println(String.format("<ENUM> (type: %1$s): %2$s", value.getClass().getCanonicalName(), value));
+                v = value;
             break;
             case MESSAGE:
                 DynamicMessage dm = (DynamicMessage) value;
@@ -571,6 +572,9 @@ public class JsonConverter {
                         ByteString bytes = (ByteString) value;
                         byte[] array = bytes.toByteArray();
                         node.put(name, array);
+                    case "com.google.protobuf.Descriptors.EnumValueDescriptor":
+                        String enumValue = ((EnumValueDescriptor) value).getName();
+                        node.put(name, enumValue);
                     break;
                     default:
                         this.output.println(String.format("<-- SKIP --> %1$s (type: %2$s)", name, value.getClass().getCanonicalName()));

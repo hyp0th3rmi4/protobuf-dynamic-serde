@@ -17,48 +17,63 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// SerializeSimpleMessage persists to the specified path a cloud event
-// that contains as payload a random SimpleMessage encoded as a protobuf
-// binary in base64. The cloud event generated contains attributes to
-// enable consumers to retrieve the file descriptor whose URI is specified
-// by the given `schemaURI`.
+// SerializeSimpleMessage persists to the specified path an `SimpleMessage`.
+// The serialisation process can either wrap the serialised protobuf version
+// of the message with a `CloudEvent` structure or publishing it as is (raw).
+// In case the message is serialised within a cloud event, then the value of
+// `schemaURI` is used to embed information about the schema of the message
+// to enable dynamic consumption.
 func SerializeSimpleMessage(path string, schemaURI string, isRaw bool) error {
 
 	message := newSimpleMessage()
 	return SerializeMessage(path, "SimpleMessage", schemaURI, message, isRaw)
 }
 
-// SerializeComplexMessage persists to the specified path a cloud event
-// that contains as payload a random ComplexMessage encoded as a protobuf
-// binary in base64. The cloud event generated contains attributes to
-// enable consumers to retrieve the file descriptor whose URI is specified
-// by the given `schemaURI`.
+// SerializeComplexMessage persists to the specified path an `ComplexMessage`.
+// The serialisation process can either wrap the serialised protobuf version
+// of the message with a `CloudEvent` structure or publishing it as is (raw).
+// In case the message is serialised within a cloud event, then the value of
+// `schemaURI` is used to embed information about the schema of the message
+// to enable dynamic consumption.
 func SerializeComplexMessage(path string, schemaURI string, isRaw bool) error {
 
 	message := newComplexMessage()
 	return SerializeMessage(path, "ComplexMessage", schemaURI, message, isRaw)
 }
 
-// SerializeImportMessage persists to the specified path a cloud event
-// that contains as payload a random ImportMessage encoded as a protobuf
-// binary in base64. The cloud event generated contains attributes to
-// enable consumers to retrieve the file descriptor whose URI is specified
-// by the given `schemaURI`.
+// SerializeImportMessage persists to the specified path an `ImportMessage`.
+// The serialisation process can either wrap the serialised protobuf version of
+// the message with a `CloudEvent` structure or publishing it as it is (raw).
+// In case the message is serialised within a cloud event, then the value of
+// `schemaURI` is used to embed information about the schema of the message
+// to enable dynamic consumption.
 func SerializeImportMessage(path string, schemaURI string, isRaw bool) error {
 
 	message := newImportMessage()
 	return SerializeMessage(path, "ImportMessage", schemaURI, message, isRaw)
 }
 
-// SerializeComposedMessage persists to the specified path a cloud event
-// that contains as payload a random ComposedMessage encoded as a protobuf
-// binary in base64. The cloud event generated contains attributes to
-// enable consumers to retrieve the file descriptor whose URI is specified
-// by the given `schemaURI`.
+// SerializeComposedMessage persists to the specified path an `ComposedMessage`.
+// The serialisation process can either wrap the serialised protobuf version of
+// the message with a `CloudEvent` structure or publishing it as it is (raw).
+// In case the message is serialised within a cloud event, then the value of
+// `schemaURI` is used to embed information about the schema of the message
+// to enable dynamic consumption.
 func SerializeComposedMessage(path string, schemaURI string, isRaw bool) error {
 
 	message := newComposedMessage()
 	return SerializeMessage(path, "ComposedMessage", schemaURI, message, isRaw)
+}
+
+// SerializeEnumMessage persists to the specified path an `EnumMessage`. The
+// serialisation process can either wrap the serialised protobuf version of
+// the message with a `CloudEvent`` structure or publishing it as it is (raw).
+// In case the message is serialised within a cloud event, then the value of
+// `schemaURI` is used to embed information about the schema of the message
+// to enable dynamic consumption.
+func SerializeEnumMessage(path string, schemaURI string, isRaw bool) error {
+	message := newEnumMessage()
+	return SerializeMessage(path, "EnumMessage", schemaURI, message, isRaw)
 }
 
 // SerializeMessage implements the heavy-lifting required for emitting a cloud event.
@@ -171,5 +186,14 @@ func newComposedMessage() *events.ComposedMessage {
 	return &events.ComposedMessage{
 		Param_01: newSimpleMessage(),
 		Param_02: newComplexMessage(),
+	}
+}
+
+// newEnumMessage generates a message that wraps an
+// enumeration and uses it to define an attribute.
+func newEnumMessage() *events.EnumMessage {
+
+	return &events.EnumMessage{
+		PreferredSeason: events.EnumMessage_SPRING,
 	}
 }
